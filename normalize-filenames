@@ -7,6 +7,7 @@ require 'bundler/inline'
 # this environment variable causes issues with bundler/inline
 ENV.delete 'BUNDLE_BIN'
 
+# download and require `thor` for command line option parsing and pretty logging
 gemfile do
   source 'https://rubygems.org'
 
@@ -14,10 +15,12 @@ gemfile do
 end
 
 class FilenameNormalizer < Thor
+  # if the command fails when parsing options, return a non-zero exit code
   def self.exit_on_failure?
     true
   end
 
+  # fail on invalid/unknown options
   check_unknown_options!
 
   desc 'unicode PATH', 'Perform Unicode normalization on filenames in PATH'
@@ -44,7 +47,9 @@ class FilenameNormalizer < Thor
     validate_unicode_options! path
     form = unicode_form
 
+    # `Find` traverses all directories recursively, providing file and directory paths to the block
     Find.find(path) do |path|
+      # print traversal info if running in verbose mode
       if options[:verbose]
         if File.directory?(path)
           shell.say_status :directory, path, :blue
@@ -53,16 +58,22 @@ class FilenameNormalizer < Thor
         end
       end
 
+      # Ruby encodes the path strings as ASCII (or some variant for special characters) by default
+      # convert them to Unicode before normalizing
       path = path.force_encoding('UTF-8')
       unless path.valid_encoding?
+        # it's possible for a path to be invalid Unicode
         shell.say_status :invalid, path, :red
         next
       end
 
+      # normalize the path and check if it's different from the current on-disk path
       normalized = path.unicode_normalize form
       next unless path != normalized
 
+      # report unnormalized paths
       shell.say_status :unnormalized, path, :yellow
+
       begin
         File.rename path, normalized
       rescue Exception => e
@@ -76,6 +87,8 @@ class FilenameNormalizer < Thor
   private
 
   def validate_unicode_options!(path)
+    # `thor` allows negation flags (e.g. --no-operation) and there's no way to turn them off
+    # ensure the user didn't use them
     if options[:operation].nil?
       shell.say_status :missing, 'operation option', :red
       exit false
@@ -86,6 +99,7 @@ class FilenameNormalizer < Thor
       exit false
     end
 
+    # ensure the path is valid and exists
     if path.empty?
       shell.say_status :invalid, 'path cannot be empty', :red
       exit false
@@ -97,6 +111,7 @@ class FilenameNormalizer < Thor
     end
   end
 
+  # convert the separate operation and preservation options into a single Unicode Normalization Form value
   def unicode_form
     case options.values_at(:operation, :glyph_preservation)
     when %w[compose canonical]
@@ -108,7 +123,7 @@ class FilenameNormalizer < Thor
     when %w[decompose compatibility]
       :nfkd
     else
-      raise "Unexpected unicode options #{options.values_at(:operation, :glyph_preservation)}"
+      raise "Unexpected Unicode options #{options.values_at(:operation, :glyph_preservation)}"
     end
   end
 end
