@@ -1,0 +1,48 @@
+#! /usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'bundler/inline'
+
+# this environment variable causes issues with bundler/inline
+ENV.delete 'BUNDLE_BIN'
+
+gemfile do
+  source 'https://rubygems.org'
+
+  gem 'thor', '~> 1.0.1'
+end
+
+class FilenameNormalizer < Thor
+  def self.exit_on_failure?
+    true
+  end
+
+  check_unknown_options!
+
+  desc 'unicode PATH', 'Perform Unicode normalization on filenames in PATH'
+  method_option :operation,
+                desc: 'Whether to compose Unicode grapheme clusters into single code points, or decompose them into multi-code-point sequneces',
+                type: :string,
+                enum: %i[compose decompose],
+                default: :compose,
+                required: true,
+                aliases: '-o'
+  method_option :glyph_preservation,
+                desc: 'Whether to preserve glyphs or replace applicable glyphs with compatibility characters',
+                banner: 'PRESERVATION_TYPE',
+                type: :string,
+                enum: %i[canonical compatibility],
+                default: :canonical,
+                required: true,
+                aliases: '-g'
+  method_option :verbose,
+                desc: 'Print verbose output of every file and folder visited',
+                type: :boolean,
+                aliases: '-v'
+  def unicode(path)
+    shell.say_status :path, path, :green
+    shell.say_status :options, options, :green
+  end
+end
+
+FilenameNormalizer.start
