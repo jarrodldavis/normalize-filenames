@@ -1,6 +1,7 @@
 #! /usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'find'
 require 'bundler/inline'
 
 # this environment variable causes issues with bundler/inline
@@ -40,8 +41,75 @@ class FilenameNormalizer < Thor
                 type: :boolean,
                 aliases: '-v'
   def unicode(path)
-    shell.say_status :path, path, :green
-    shell.say_status :options, options, :green
+    validate_unicode_options! path
+    form = unicode_form
+
+    Find.find(path) do |path|
+      if options[:verbose]
+        if File.directory?(path)
+          shell.say_status :directory, path, :blue
+        else
+          shell.say_status :file, path, :blue
+        end
+      end
+
+      path = path.force_encoding('UTF-8')
+      unless path.valid_encoding?
+        shell.say_status :invalid, path, :red
+        next
+      end
+
+      normalized = path.unicode_normalize form
+      next unless path != normalized
+
+      shell.say_status :unnormalized, path, :yellow
+      begin
+        File.rename path, normalized
+      rescue Exception => e
+        shell.say_status :'rename fail', "#{path.inspect} => #{normalized.inspect}: #{e.message.dump[1..-1]}", :red
+      else
+        shell.say_status :rename, "#{path.inspect} => #{normalized.inspect}"
+      end
+    end
+  end
+
+  private
+
+  def validate_unicode_options!(path)
+    if options[:operation].nil?
+      shell.say_status :missing, 'operation option', :red
+      exit false
+    end
+
+    if options[:glyph_preservation].nil?
+      shell.say_status :missing, 'glyph-preservation option', :red
+      exit false
+    end
+
+    if path.empty?
+      shell.say_status :invalid, 'path cannot be empty', :red
+      exit false
+    end
+
+    unless File.exist? path
+      shell.say_status 'not found', path, :red
+      exit false
+    end
+  end
+
+  def unicode_form
+    case options.values_at(:operation, :glyph_preservation)
+    when %i[compose canonical]
+      :nfc
+    when %i[decompose canonical]
+      :nfd
+    when %i[compose compatibility]
+      :nfkc
+    when %i[decompose compatibility]
+      :nfkd
+    else
+      raise "Unexpected unicode options #{options.values_at(:operation, :glyph_preservation)}"
+    end
   end
 end
 
