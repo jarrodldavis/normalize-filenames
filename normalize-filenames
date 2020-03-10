@@ -24,16 +24,16 @@ class FilenameNormalizer < Thor
   method_option :operation,
                 desc: 'Whether to compose Unicode grapheme clusters into single code points, or decompose them into multi-code-point sequneces',
                 type: :string,
-                enum: %i[compose decompose],
-                default: :compose,
+                enum: %w[compose decompose],
+                default: 'compose',
                 required: true,
                 aliases: '-o'
   method_option :glyph_preservation,
                 desc: 'Whether to preserve glyphs or replace applicable glyphs with compatibility characters',
                 banner: 'PRESERVATION_TYPE',
                 type: :string,
-                enum: %i[canonical compatibility],
-                default: :canonical,
+                enum: %w[canonical compatibility],
+                default: 'canonical',
                 required: true,
                 aliases: '-g'
   method_option :verbose,
@@ -99,13 +99,13 @@ class FilenameNormalizer < Thor
 
   def unicode_form
     case options.values_at(:operation, :glyph_preservation)
-    when %i[compose canonical]
+    when %w[compose canonical]
       :nfc
-    when %i[decompose canonical]
+    when %w[decompose canonical]
       :nfd
-    when %i[compose compatibility]
+    when %w[compose compatibility]
       :nfkc
-    when %i[decompose compatibility]
+    when %w[decompose compatibility]
       :nfkd
     else
       raise "Unexpected unicode options #{options.values_at(:operation, :glyph_preservation)}"
