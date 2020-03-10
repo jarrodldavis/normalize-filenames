@@ -25,6 +25,8 @@ RUN apt-get update \
     # Install ruby-debug-ide and debase
     && gem install ruby-debug-ide \
     && gem install debase \
+    # Install dependencies for vscode-ruby
+    && gem install rubocop rcodetools \
     #
     # Create a non-root user to use if preferred - see https://aka.ms/vscode-remote/containers/non-root-user.
     && groupadd --gid $USER_GID $USERNAME \
