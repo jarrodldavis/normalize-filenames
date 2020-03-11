@@ -24,13 +24,6 @@ class FilenameNormalizer < Thor
   check_unknown_options!
 
   desc 'unicode PATH', 'Perform Unicode normalization on filenames in PATH'
-  method_option :operation,
-                desc: 'Whether to compose Unicode grapheme clusters into single code points, or decompose them into multi-code-point sequneces',
-                type: :string,
-                enum: %w[compose decompose],
-                default: 'compose',
-                required: true,
-                aliases: '-o'
   method_option :glyph_preservation,
                 desc: 'Whether to preserve glyphs or replace applicable glyphs with compatibility characters',
                 banner: 'PRESERVATION_TYPE',
@@ -39,6 +32,13 @@ class FilenameNormalizer < Thor
                 default: 'canonical',
                 required: true,
                 aliases: '-g'
+  method_option :operation,
+                desc: 'Whether to compose Unicode grapheme clusters into single code points, or decompose them into multi-code-point sequneces',
+                type: :string,
+                enum: %w[compose decompose],
+                default: 'compose',
+                required: true,
+                aliases: '-o'
   method_option :verbose,
                 desc: 'Print verbose output of every file and folder visited',
                 type: :boolean,
