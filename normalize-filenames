@@ -2,17 +2,15 @@
 # frozen_string_literal: true
 
 require 'find'
-require 'bundler/inline'
 
-# this environment variable causes issues with bundler/inline
-ENV.delete 'BUNDLE_BIN'
-
-# download and require `thor` for command line option parsing and pretty logging
-gemfile do
-  source 'https://rubygems.org'
-
-  gem 'thor', '~> 1.0.1'
+begin
+  gem 'thor'
+rescue LoadError
+  system('gem install thor')
+  Gem.clear_paths
 end
+
+require 'thor'
 
 class FilenameNormalizer < Thor
   # if the command fails when parsing options, return a non-zero exit code
